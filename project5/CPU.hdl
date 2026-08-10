@@ -32,5 +32,45 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-	//// Replace this comment with your code.
+    //if instruction[15] == 0, then it's A-instruction
+    Not(in= instruction[15], out = isAinstruction);
+
+    //instruction[15] tells rather it is A-instruction or C-instruction
+    Mux16(a=ALUoutput, b= instruction, sel= isAinstruction, out=Ainput);
+
+    //Value will be written into A register if it is A instruction
+    //or if data from ALU should be written to A register
+    Or(a=isAinstruction, b= instruction[5], out=loadA);  
+
+    ARegister(in= Ainput, load=loadA , out=Aoutput, out[0..14] = addressM);
+
+
+    Mux16(a=Aoutput, b=inM, sel=instruction[12] , out=ALUinput2);
+
+    //Should load in DRegister only if it is a C-instruction
+    And(a=instruction[15], b=instruction[4] , out=loadD);
+    DRegister(in=ALUoutput, load=loadD, out=ALUinput1);
+
+    ALU(x=ALUinput1, y=ALUinput2, zx=instruction[11], nx=instruction[10], 
+    zy=instruction[9] , ny=instruction[8], f= instruction[7], no=instruction[6],
+    out=ALUoutput, out = outM, zr=zr, ng=ng);
+
+
+    And(a=instruction[15], b=instruction[3], out=writeM);
+
+
+    And(a=zr, b=instruction[1], out=iszero);
+    And(a=ng, b=instruction[2], out=isnegative);
+    
+    Or(a=zr, b=ng, out=notps);
+    Not(in=notps, out=ps);
+    And(a=ps, b=instruction[0], out=ispositive);
+
+    Or(a=iszero, b=isnegative, out=notpositive);
+    Or(a=notpositive, b=ispositive, out=jump);
+
+    //it should only jump if it is a C-instruction
+    And(a= instruction[15], b=jump, out=mustJump);
+
+    PC(in=Aoutput, load=mustJump, inc=true, reset=reset, out[0..14]=pc);
 }
