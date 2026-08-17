@@ -1,73 +1,28 @@
+### Dictionary of comp instructions
+COMP_TABLE = {
+    "0":   "0101010", "1":   "0111111", "-1":  "0111010",
+    "D":   "0001100", "A":   "0110000", "!D":  "0001101",
+    "!A":  "0110001", "-D":  "0001111", "-A":  "0110011",
+    "D+1": "0011111", "A+1": "0110111", "D-1": "0001110",
+    "A-1": "0110010", "D+A": "0000010", "D-A": "0010011",
+    "A-D": "0000111", "D&A": "0000000", "D|A": "0010101",
+    "M":   "1110000", "!M":  "1110001", "-M":  "1110011",
+    "M+1": "1110111", "M-1": "1110010", "D+M": "1000010",
+    "D-M": "1010011", "M-D": "1000111", "D&M": "1000000",
+    "D|M": "1010101",
+}
+###
 
 def dest(string):
-    null = "000"
-
-    if string == None:
-        return null
-
-    if "D" in string:
-        null[1] = '1'
-    if "M" in string:
-        null[2] = '1'
-    if "A" in string:
-        null[0] = '1'
-
-    return null
+    if string is None:
+        return "000"
+    a = '1' if 'A' in string else '0'
+    d = '1' if 'D' in string else '0'
+    m = '1' if 'M' in string else '0'
+    return a + d + m
 
 def comp(string):
-    code = "0000000"
-
-    if string == "0":
-        for i in range(1, 7):
-            if i%2 != 0:
-                code[i] = "1"
-    elif string == "1":
-        for i in range (1, 7):
-            code[i] = "1"
-    elif string == "-1":
-        code[1]="1"
-        code[2]="1"
-        code[3]="1"
-        code[5]="1"
-
-    if "M" in string:
-        code[0] = '1'
-
-    if not("D" in string):
-        code[1] = '1'
-
-    if not("A" in string) and not("M" in string):
-        code[3] = '1'
-
-    if "D+1" in string:
-        for i in range(2, 7):
-            code[i] = '1'
-
-    if "A+1" in string or "M+1" in string:
-        code[1] = code[2] = code[4] = code[5] = code[6] = '1'
-
-    if "D-1" in string:
-        code[3] = code[4] = code[5] = '1'
-
-    if "A-1" in string or "M-1" in string:
-        code[1] = code[2] = code[5] = '1'
-
-    if "D+" in string:
-        code[5] = '1'
-
-    if "D-" in string:
-        code[2] = code[5] = code[6] = '1'
-
-    if "-D" in string:
-        code[4] = code[5] = code[6] = '1'
-
-    if "D|" in string:
-        code[2] = code[4] = code[6] = '1'
-
-    return code
-
-
-
+    return COMP_TABLE.get(string)
 
 
 def jump(string):

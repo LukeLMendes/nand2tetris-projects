@@ -17,8 +17,9 @@ class Parser:
             return False
 
     def advance(self):
+        self.indice += 1
         while (self.assembly[self.indice].strip().startswith("//") or
-             len(self.assembly[self.indice].strip()) == 0):
+            len(self.assembly[self.indice].strip()) == 0):
             self.indice += 1
 
     def instructionType(self):
