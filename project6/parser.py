@@ -1,26 +1,20 @@
 class Parser:
     def __init__(self, path):
-        with open(path, "r") as arquivo:
-            self.assembly = arquivo.readlines()
+        with open(path, "r") as file:
+            self.assembly = [
+                line for line in file
+                if line.strip() and not(line.strip().startswith("//"))
+            ]
             self.indice = -1
 
     def hasMoreLines(self):
         if (self.indice >= len(self.assembly) - 1):
             return False
         else:
-            for i in range(self.indice+1, len(self.assembly)):
-                if len(self.assembly[i].strip()) == 0:
-                    continue
-
-                if not(self.assembly[i].strip().startswith("\\")):
-                    return True
-            return False
+            return True
 
     def advance(self):
         self.indice += 1
-        while (self.assembly[self.indice].strip().startswith("//") or
-            len(self.assembly[self.indice].strip()) == 0):
-            self.indice += 1
 
     def instructionType(self):
         if (self.assembly[self.indice].strip().startswith("@")):

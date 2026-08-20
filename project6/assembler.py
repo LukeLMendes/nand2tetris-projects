@@ -57,8 +57,11 @@ def assembler(path):
 path = str(input())
 instructions = assembler(path+".asm")
 with open(f"{path}.hack", "w", encoding="utf-8") as file:
-    for line in instructions:
-        file.writelines(line + "\n")
+    for i in range(0, len(instructions)):
+        if (i < len(instructions[i])-1):
+            file.writelines(instructions[i] + '\n')
+        else:
+            file.writelines(instructions[i])
 
 print("File .hack created with sucess!")
 
