@@ -2,18 +2,18 @@ class CodeWriter:
   def __init__(self, path):
     self.output_file = open(path, "w", encoding="utf-8")
     self.file_name = None
-    self.function_name = None
+    self.current_function = None
     self.true_count = 0
     self.jump_count = 0
-    self.ret = {}
+    self.i = 0
 
 
   def setFileName(self, string):
     self.file_name = string
 
-  def setFunctionName(self, string):
-    self.function_name = f"{self.file_name}.{string}"
-    self.ret[self.function_name] = 0
+
+  def setCurrentFunction(self, string):
+    self.current_function = string
 
   def translateArithmetic(self, string):
     if (string.strip() == "add"):
@@ -111,16 +111,16 @@ class CodeWriter:
     self.output_file.write(assembly + "\n")
 
   def writeLabel(self, label):
-    label = f"({self.function_name}${label})"
+    label = f"({self.current_function}${label})"
     self.output_file.write(label + "\n")
 
   def writeGoto(self, label):
-    label = f"{self.function_name}${label}"
+    label = f"{self.current_function}${label}"
     goto_command = f"@{label}\n0;JMP"
     self.output_file.write(goto_command + "\n")
 
   def writeIf(self, label):
-    label = f"{self.function_name}${label}"
+    label = f"{self.current_function}${label}"
     ifgoto_command = f"@SP\nM=M-1\nA=M\nD=M\n@{label}\nD;JGT"
     self.output_file.write(ifgoto_command + "\n")
 
@@ -128,7 +128,7 @@ class CodeWriter:
     self.setFunctionName(functionName)
 
     #creates a funcion, opening space in the memory for the locals variables
-    self.output_file.write(f"({self.function_name})" + "\n") # (functionName)
+    self.output_file.write(f"({self.current_function})" + "\n") # (functionName)
     self.writePushPop("C_PUSH", "constant", 0)               # push constant 0
     self.writePushPop("C_POP", "temp", 0)                    # pop temp 0
     self.writeLabel("LOOP")                                  # (LOOP)
@@ -145,11 +145,10 @@ class CodeWriter:
     self.writeGoto("LOOP")                                   # goto LOOP
     self.writeLabel("END_LOOP")                              # (END_LOOP)
 
-def writeCall(self, functionName, nArgs, fileName):
-  callee_name = f"{fileName}.{functionName}"
+def writeCall(self, functionName, nArgs):
 
   # push returnAddress
-  self.output_file.write(f"@{self.function_name}$ret.{self.ret.get(self.function_name)}" + "\n")
+  self.output_file.write(f"@{functionName}$ret.{self.i}" + "\n")
   self.output_file.write("D=A\n@SP\nM=M+1\nA=M-1\nM=D" + "\n")
 
   # push LCL
@@ -172,12 +171,12 @@ def writeCall(self, functionName, nArgs, fileName):
   self.output_file.write("@SP\nD=M\n@LCL\nM=D" + "\n")
 
   # goto functionName
-  self.output_file.write("@{callee_name}\n0;JMP" + "\n")
+  self.output_file.write(f"@{functionName}\n0;JMP" + "\n")
 
   # (returnAddress)
-  self.output_file.write("({self.function_name}$ret.{self.ret.get(self.function_name)})" + "\n")
+  self.output_file.write(f"({functionName}$ret.{self.i})" + "\n")
 
-  self.ret[self.function_name] += 1
+  self.i += 1
 
 def writeReturn(self):
 
