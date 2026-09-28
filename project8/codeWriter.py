@@ -5,7 +5,7 @@ class CodeWriter:
     self.function_name = None
     self.true_count = 0
     self.jump_count = 0
-    self.rets = 0
+    self.ret = {}
 
 
   def setFileName(self, string):
@@ -13,6 +13,7 @@ class CodeWriter:
 
   def setFunctionName(self, string):
     self.function_name = f"{self.file_name}.{string}"
+    self.ret[self.function_name] = 0
 
   def translateArithmetic(self, string):
     if (string.strip() == "add"):
@@ -146,9 +147,58 @@ class CodeWriter:
 
 def writeCall(self, functionName, nArgs, fileName):
   callee_name = f"{fileName}.{functionName}"
-  self.writePushPop("C_PUSH", f"{self.function_name}$ret{self.rets}")
 
+  # push returnAddress
+  self.output_file.write(f"@{self.function_name}$ret.{self.ret.get(self.function_name)}" + "\n")
+  self.output_file.write("D=A\n@SP\nM=M+1\nA=M-1\nM=D" + "\n")
 
+  # push LCL
+  push = "D=M\n@SP\nM=M+1\nA=M-1\nM=D"
+  self.output_file.write("@LCL\n" + push + "\n")
+
+  # push ARG
+  self.output_file.write("@ARG\n" + push + "\n")
+
+  # push THIS
+  self.writePushPop("C_PUSH", "pointer", 0)
+
+  # push THAT
+  self.writePushPop("C_PUSH", "pointer", 1)
+
+  # ARG = SP-5-nArgs
+  self.output_file.write(f"@5\nD=A\n@{nArgs}\nD=D+A\n@SP\nD=M-D\n@ARG\nM=D" + "\n")
+
+  # LCL = SP
+  self.output_file.write("@SP\nD=M\n@LCL\nM=D" + "\n")
+
+  # goto functionName
+  self.output_file.write("@{callee_name}\n0;JMP" + "\n")
+
+  # (returnAddress)
+  self.output_file.write("({self.function_name}$ret.{self.ret.get(self.function_name)})" + "\n")
+
+  self.ret[self.function_name] += 1
+
+def writeReturn(self):
+
+  # *(ARG) = pop()
+  self.output_file.write("@SP\nA=M-1\nD=M\nARG\nA=M\nM=D" + "\n")
+
+  # frame = *(LCL)
+  # THAT = *(frame-1)
+  self.output_file.write("@LCL\nD=M\n@5\nM=D\nM=M-1\nA=M\nD=M\n@THAT\nM=D" + "\n")
+
+  # THIS = *(frame-2)
+  self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@THIS\nM=D" + "\n")
+
+  # ARG = *(frame-3)
+  self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@ARG\nM=D" + "\n")
+
+  #LCL = *(frame-4)
+  self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@LCL\nM=D" + "\n")
+
+  #goto returnAddress
+  self.output_file.write("@5\nM=M-1\nA=M\nA=M\n0;JMP" + "\n")
 
 
   def close(self):
