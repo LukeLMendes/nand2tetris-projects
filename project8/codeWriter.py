@@ -2,19 +2,21 @@ class CodeWriter:
   def __init__(self, path):
     self.output_file = open(path, "w", encoding="utf-8")
     self.file_name = None
-    self.calling_chain = []
-    self.chain_index = 0
+    self.current_function = "BOOTSTRAP"
     self.true_count = 0
     self.jump_count = 0
     self.i = 0
 
 
-  def addChain(self, string):
-    self.calling_chain[self.chain_index] = string
-    self.chain_index += 1
+  def setFileName(self, file_name):
+    self.file_name = file_name
+    # Flow commands outside a function are scoped to the current file.
+    self.current_function = file_name
 
-  def popChain(self):
-    self.chain_index -= 1
+  def writeInit(self):
+    self.current_function = "BOOTSTRAP"
+    self.output_file.write("@256\nD=A\n@SP\nM=D\n")
+    self.writeCall("Sys.init", 0)
 
   def translateArithmetic(self, string):
     if (string.strip() == "add"):
@@ -84,16 +86,16 @@ class CodeWriter:
         return assembly
     elif command == "C_POP":
       if segment=="argument":
-        assembly = f"@SP\nM=M-1\nA=M\nD=M\n@5\nM=D\n@{index}\nD=A\n@ARG\nD=D+M\n@6\nM=D\n@5\nD=M\n@6\nA=M\nM=D"
+        assembly = f"@SP\nM=M-1\nA=M\nD=M\n@R13\nM=D\n@{index}\nD=A\n@ARG\nD=D+M\n@R14\nM=D\n@R13\nD=M\n@R14\nA=M\nM=D"
         return assembly
       elif segment=="local":
-        assembly = f"@SP\nM=M-1\nA=M\nD=M\n@5\nM=D\n@{index}\nD=A\n@LCL\nD=D+M\n@6\nM=D\n@5\nD=M\n@6\nA=M\nM=D"
+        assembly = f"@SP\nM=M-1\nA=M\nD=M\n@R13\nM=D\n@{index}\nD=A\n@LCL\nD=D+M\n@R14\nM=D\n@R13\nD=M\n@R14\nA=M\nM=D"
         return assembly
       elif segment=="this":
-        assembly = f"@SP\nM=M-1\nA=M\nD=M\n@5\nM=D\n@{index}\nD=A\n@THIS\nD=D+M\n@6\nM=D\n@5\nD=M\n@6\nA=M\nM=D"
+        assembly = f"@SP\nM=M-1\nA=M\nD=M\n@R13\nM=D\n@{index}\nD=A\n@THIS\nD=D+M\n@R14\nM=D\n@R13\nD=M\n@R14\nA=M\nM=D"
         return assembly
       elif segment=="that":
-        assembly = f"@SP\nM=M-1\nA=M\nD=M\n@5\nM=D\n@{index}\nD=A\n@THAT\nD=D+M\n@6\nM=D\n@5\nD=M\n@6\nA=M\nM=D"
+        assembly = f"@SP\nM=M-1\nA=M\nD=M\n@R13\nM=D\n@{index}\nD=A\n@THAT\nD=D+M\n@R14\nM=D\n@R13\nD=M\n@R14\nA=M\nM=D"
         return assembly
       elif segment=="static":
         assembly = "@SP\nM=M-1\nA=M\nD=M\n@" + self.file_name + f".{index}\nM=D"
@@ -112,49 +114,25 @@ class CodeWriter:
     self.output_file.write(assembly + "\n")
 
   def writeLabel(self, label):
-    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
-
-    label = f"({current_function}${label})"
-    self.output_file.write(label + "\n")
+    self.output_file.write(f"({self.current_function}${label})\n")
 
   def writeGoto(self, label):
-    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
-
-    label = f"({current_function}${label})"
-    goto_command = f"@{label}\n0;JMP"
-    self.output_file.write(goto_command + "\n")
+    self.output_file.write(f"@{self.current_function}${label}\n0;JMP\n")
 
   def writeIf(self, label):
-    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
-
-    label = f"({current_function}${label})"
-    ifgoto_command = f"@SP\nM=M-1\nA=M\nD=M\n@{label}\nD;JGT"
-    self.output_file.write(ifgoto_command + "\n")
+    self.output_file.write(
+      f"@SP\nAM=M-1\nD=M\n@{self.current_function}${label}\nD;JNE\n"
+    )
 
   def writeFunction(self, functionName, nVars):
-    self.addChain(functionName)
-    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
-
-    #creates a funcion, opening space in the memory for the locals variables
-    self.output_file.write(f"({current_function})" + "\n") # (functionName)
-    self.writePushPop("C_PUSH", "constant", 0)               # push constant 0
-    self.writePushPop("C_POP", "temp", 0)                    # pop temp 0
-    self.writeLabel("LOOP")                                  # (LOOP)
-    self.writePushPop("C_PUSH", "temp", 0)                   # push temp 0
-    self.writePushPop("C_PUSH", "constant", int(nVars))      # push constant nVars
-    self.writeArithmetic("lt")                               # lt
-    self.writeArithmetic("neg")                              # neg
-    self.writeIf("END_LOOP")                                 # if-goto END_LOOP
-    self.writePushPop("C_PUSH", "constant", 0)               # push constant 0
-    self.writePushPop("C_PUSH", "temp", 0)                   # push temp 0
-    self.writePushPop("C_PUSH", "constant", 1)               # push constant 1
-    self.writeArithmetic("add")                              # add
-    self.writePushPop("C_POP", "temp", 0)                    # pop temp 0
-    self.writeGoto("LOOP")                                   # goto LOOP
-    self.writeLabel("END_LOOP")                              # (END_LOOP)
+    # Function scope is lexical; calls and returns do not change it.
+    self.current_function = functionName
+    self.output_file.write(f"({functionName})\n")
+    for _ in range(nVars):
+      self.writePushPop("C_PUSH", "constant", 0)
 
   def writeCall(self, functionName, nArgs):
-    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
+    current_function = self.current_function
 
     # push returnAddress
     self.output_file.write(f"@{current_function}$ret.{self.i}" + "\n")
@@ -188,27 +166,27 @@ class CodeWriter:
     self.i += 1
 
   def writeReturn(self):
-
-    self.popChain() # remove current executing function from the top
+    # frame = *(LCL)
+    # Save FRAME before writing the return value.
+    self.output_file.write("@LCL\nD=M\n@R13\nM=D\n")
+    # returnAddress = *(frame-5)
+    self.output_file.write("@5\nA=D-A\nD=M\n@R14\nM=D\n")
 
     # *(ARG) = pop()
-    self.output_file.write("@SP\nA=M-1\nD=M\nARG\nA=M\nM=D" + "\n")
+    self.output_file.write("@SP\nAM=M-1\nD=M\n@ARG\nA=M\nM=D\n")
+    # SP = ARG + 1
+    self.output_file.write("@ARG\nD=M+1\n@SP\nM=D\n")
 
-    # frame = *(LCL)
+    # Restore the saved segments in this order:
     # THAT = *(frame-1)
-    self.output_file.write("@LCL\nD=M\n@5\nM=D\nM=M-1\nA=M\nD=M\n@THAT\nM=D" + "\n")
-
     # THIS = *(frame-2)
-    self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@THIS\nM=D" + "\n")
-
     # ARG = *(frame-3)
-    self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@ARG\nM=D" + "\n")
-
     #LCL = *(frame-4)
-    self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@LCL\nM=D" + "\n")
+    for segment in ("THAT", "THIS", "ARG", "LCL"):
+      self.output_file.write(f"@R13\nAM=M-1\nD=M\n@{segment}\nM=D\n")
 
-    #goto returnAddress
-    self.output_file.write("@5\nM=M-1\nA=M\nA=M\n0;JMP" + "\n")
+    # goto returnAddress
+    self.output_file.write("@R14\nA=M\n0;JMP\n")
 
 
   def close(self):

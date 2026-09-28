@@ -2,8 +2,8 @@ class Parser:
     def __init__(self, path):
         with open(path, "r") as file:
             self.vmcode = [
-                line for line in file
-                if line.strip() and not(line.strip().startswith("//"))
+                command for line in file
+                if (command := line.split("//", 1)[0].strip())
             ]
             self.indice = -1
 
@@ -17,28 +17,27 @@ class Parser:
         self.indice += 1
 
     def commandType(self):
-        if ("push" in self.vmcode[self.indice].strip()):
+        command = self.vmcode[self.indice].split()[0].strip()
+        if command == "push":
             return "C_PUSH"
-        elif ("pop" in self.vmcode[self.indice].strip()):
+        elif command == "pop":
             return "C_POP"
-        elif ("add" in self.vmcode[self.indice] or "sub" in self.vmcode[self.indice] or
-              "neg" in self.vmcode[self.indice] or "eq" in self.vmcode[self.indice]  or
-              "gt" in self.vmcode[self.indice] or "lt" in self.vmcode[self.indice] or
-              "and" in self.vmcode[self.indice] or "not" in self.vmcode[self.indice] or
-              "or" in self.vmcode[self.indice]):
+        elif command in ("add", "sub", "neg", "eq", "gt", "lt", "and", "not", "or"):
             return "C_ARITHMETIC"
-        elif ("label" in self.vmcode[self.indice]):
+        elif command == "label":
             return "C_LABEL"
-        elif ("if-goto" in self.vmcode[self.indice]):
+        elif command == "if-goto":
             return "C_IF"
-        elif ("goto" in self.vmcode[self.indice]):
+        elif command == "goto":
             return "C_GOTO"
-        elif ("function" in self.vmcode[self.indice]):
+        elif command == "function":
             return "C_FUNCTION"
-        elif ("call" in self.vmcode[self.indice]):
+        elif command == "call":
             return "C_CALL"
-        elif ("return" in self.vmcode[self.indice]):
+        elif command == "return":
             return "C_RETURN"
+        else:
+            raise ValueError(f"Unknown VM command: {command}")
 
     def arg1(self):
         if self.commandType() == "C_ARITHMETIC":
@@ -52,4 +51,3 @@ class Parser:
     def arg2(self):
         arg2 = self.vmcode[self.indice].strip().split()
         return int(arg2[2]) #return index, nVars ,nArgs or label
-
