@@ -2,18 +2,19 @@ class CodeWriter:
   def __init__(self, path):
     self.output_file = open(path, "w", encoding="utf-8")
     self.file_name = None
-    self.current_function = None
+    self.calling_chain = []
+    self.chain_index = 0
     self.true_count = 0
     self.jump_count = 0
     self.i = 0
 
 
-  def setFileName(self, string):
-    self.file_name = string
+  def addChain(self, string):
+    self.calling_chain[self.chain_index] = string
+    self.chain_index += 1
 
-
-  def setCurrentFunction(self, string):
-    self.current_function = string
+  def popChain(self):
+    self.chain_index -= 1
 
   def translateArithmetic(self, string):
     if (string.strip() == "add"):
@@ -111,24 +112,31 @@ class CodeWriter:
     self.output_file.write(assembly + "\n")
 
   def writeLabel(self, label):
-    label = f"({self.current_function}${label})"
+    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
+
+    label = f"({current_function}${label})"
     self.output_file.write(label + "\n")
 
   def writeGoto(self, label):
-    label = f"{self.current_function}${label}"
+    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
+
+    label = f"({current_function}${label})"
     goto_command = f"@{label}\n0;JMP"
     self.output_file.write(goto_command + "\n")
 
   def writeIf(self, label):
-    label = f"{self.current_function}${label}"
+    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
+
+    label = f"({current_function}${label})"
     ifgoto_command = f"@SP\nM=M-1\nA=M\nD=M\n@{label}\nD;JGT"
     self.output_file.write(ifgoto_command + "\n")
 
   def writeFunction(self, functionName, nVars):
-    self.setFunctionName(functionName)
+    self.addChain(functionName)
+    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
 
     #creates a funcion, opening space in the memory for the locals variables
-    self.output_file.write(f"({self.current_function})" + "\n") # (functionName)
+    self.output_file.write(f"({current_function})" + "\n") # (functionName)
     self.writePushPop("C_PUSH", "constant", 0)               # push constant 0
     self.writePushPop("C_POP", "temp", 0)                    # pop temp 0
     self.writeLabel("LOOP")                                  # (LOOP)
@@ -145,59 +153,62 @@ class CodeWriter:
     self.writeGoto("LOOP")                                   # goto LOOP
     self.writeLabel("END_LOOP")                              # (END_LOOP)
 
-def writeCall(self, functionName, nArgs):
+  def writeCall(self, functionName, nArgs):
+    current_function = self.calling_chain[self.chain_index-1] #last one on the calling chain
 
-  # push returnAddress
-  self.output_file.write(f"@{functionName}$ret.{self.i}" + "\n")
-  self.output_file.write("D=A\n@SP\nM=M+1\nA=M-1\nM=D" + "\n")
+    # push returnAddress
+    self.output_file.write(f"@{current_function}$ret.{self.i}" + "\n")
+    self.output_file.write("D=A\n@SP\nM=M+1\nA=M-1\nM=D" + "\n")
 
-  # push LCL
-  push = "D=M\n@SP\nM=M+1\nA=M-1\nM=D"
-  self.output_file.write("@LCL\n" + push + "\n")
+    # push LCL
+    push = "D=M\n@SP\nM=M+1\nA=M-1\nM=D"
+    self.output_file.write("@LCL\n" + push + "\n")
 
-  # push ARG
-  self.output_file.write("@ARG\n" + push + "\n")
+    # push ARG
+    self.output_file.write("@ARG\n" + push + "\n")
 
-  # push THIS
-  self.writePushPop("C_PUSH", "pointer", 0)
+    # push THIS
+    self.writePushPop("C_PUSH", "pointer", 0)
 
-  # push THAT
-  self.writePushPop("C_PUSH", "pointer", 1)
+    # push THAT
+    self.writePushPop("C_PUSH", "pointer", 1)
 
-  # ARG = SP-5-nArgs
-  self.output_file.write(f"@5\nD=A\n@{nArgs}\nD=D+A\n@SP\nD=M-D\n@ARG\nM=D" + "\n")
+    # ARG = SP-5-nArgs
+    self.output_file.write(f"@5\nD=A\n@{nArgs}\nD=D+A\n@SP\nD=M-D\n@ARG\nM=D" + "\n")
 
-  # LCL = SP
-  self.output_file.write("@SP\nD=M\n@LCL\nM=D" + "\n")
+    # LCL = SP
+    self.output_file.write("@SP\nD=M\n@LCL\nM=D" + "\n")
 
-  # goto functionName
-  self.output_file.write(f"@{functionName}\n0;JMP" + "\n")
+    # goto functionName
+    self.output_file.write(f"@{functionName}\n0;JMP" + "\n")
 
-  # (returnAddress)
-  self.output_file.write(f"({functionName}$ret.{self.i})" + "\n")
+    # (returnAddress)
+    self.output_file.write(f"({current_function}$ret.{self.i})" + "\n")
 
-  self.i += 1
+    self.i += 1
 
-def writeReturn(self):
+  def writeReturn(self):
 
-  # *(ARG) = pop()
-  self.output_file.write("@SP\nA=M-1\nD=M\nARG\nA=M\nM=D" + "\n")
+    self.popChain() # remove current executing function from the top
 
-  # frame = *(LCL)
-  # THAT = *(frame-1)
-  self.output_file.write("@LCL\nD=M\n@5\nM=D\nM=M-1\nA=M\nD=M\n@THAT\nM=D" + "\n")
+    # *(ARG) = pop()
+    self.output_file.write("@SP\nA=M-1\nD=M\nARG\nA=M\nM=D" + "\n")
 
-  # THIS = *(frame-2)
-  self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@THIS\nM=D" + "\n")
+    # frame = *(LCL)
+    # THAT = *(frame-1)
+    self.output_file.write("@LCL\nD=M\n@5\nM=D\nM=M-1\nA=M\nD=M\n@THAT\nM=D" + "\n")
 
-  # ARG = *(frame-3)
-  self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@ARG\nM=D" + "\n")
+    # THIS = *(frame-2)
+    self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@THIS\nM=D" + "\n")
 
-  #LCL = *(frame-4)
-  self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@LCL\nM=D" + "\n")
+    # ARG = *(frame-3)
+    self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@ARG\nM=D" + "\n")
 
-  #goto returnAddress
-  self.output_file.write("@5\nM=M-1\nA=M\nA=M\n0;JMP" + "\n")
+    #LCL = *(frame-4)
+    self.output_file.write("@5\nM=M-1\nA=M\nD=M\n@LCL\nM=D" + "\n")
+
+    #goto returnAddress
+    self.output_file.write("@5\nM=M-1\nA=M\nA=M\n0;JMP" + "\n")
 
 
   def close(self):
