@@ -74,7 +74,6 @@ class Food {
 
   /** Moves the food to a new place (use this after the snake eats it). */
   method void spawn(Snake snake) {
-    do erase();
     do place(snake);
     do draw();
     return;

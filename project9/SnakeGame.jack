@@ -43,43 +43,53 @@ class SnakeGame {
       if (~((temp0.getYcoord() = temp1.getYcoord()) & (temp0.getXcoord() < temp1.getXcoord()))) { do snake.moveRight(); }
       else { do snake.moveLeft(); }
     }
-    do Sys.wait(100);  // delays the next movement
+
+    // check if the snake collided with the food
+    if ((temp0.getXcoord() = food.getXcoord()) & (temp0.getYcoord() = food.getYcoord())) {
+      do snake.increaseSize();
+      do food.spawn(snake);
+    }
+
+    do Sys.wait(100 );  // delays the next movement
     return;
   }
 
-   /** Runs the game: handles the user's inputs and moves the square accordingly */
-   method void run() {
+  /** Runs the game: handles the user's inputs and moves the square accordingly */
+  method void run() {
     var char key;  // the key currently pressed by the user
+    var char temp;
     var boolean exit;
-    let exit = false;
     var Square head;
+
+    let exit = false;
+    let temp = 0;
+
 
     while (~exit) {
       let head = snake.getSegment(0);
 
       // waits for a key to be pressed
-      while (key = 0) {
+      while ((key = 0) | (key = temp)) {
         let key = Keyboard.keyPressed();
         do moveSnake();
       }
+      let temp = key;
+
       if (key = 140)  { let exit = true; }     // ESC key
       if (key = 131) { let direction = 1; }   // up arrow
       if (key = 133) { let direction = 2; }   // down arrow
       if (key = 130) { let direction = 3; }   // left arrow
       if (key = 132) { let direction = 4; }   // right arrow
 
-      // waits for the key to be released
-      while (~(key = 0)) {
+      // waits for the user to click on another key
+      while ((key = temp) | (key = 0)) {
         let key = Keyboard.keyPressed();
         do moveSnake();
       }
 
-      if ((head.getXcoord() = food.getXcoord()) & (head.getYcoord() = food.getYcoord())) {
-        
-      }
-
     } // while
-     return;
-   }
+
+    return;
+  }
 
 }

@@ -138,4 +138,31 @@ class Snake {
 
     return;
   }
+
+  /** Grows the snake by one block. The new block is created on top of the
+      current tail; on the next step the old tail moves forward and the new
+      block stays behind, so no search for free space is needed. */
+  method void increaseSize() {
+    var Array newSnake;
+    var Square tail, extra;
+    var int i;
+
+    let newSnake = Array.new(lenght + 1);
+
+    let i = 0;
+    while (i < lenght) {
+      let newSnake[i] = snake[i];
+      let i = i + 1;
+    }
+
+    let tail = snake[lenght - 1];
+    let extra = Square.new(tail.getXcoord(), tail.getYcoord(), 16);
+    let newSnake[lenght] = extra;
+
+    do snake.dispose(); // frees only the old array, the Squares live on in newSnake
+    let snake = newSnake;
+    let lenght = lenght + 1;
+
+    return;
+  }
 }
