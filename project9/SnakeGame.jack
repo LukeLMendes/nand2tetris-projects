@@ -2,10 +2,14 @@ class SnakeGame {
   field Snake snake;
   field int direction; // the snake's current direction:
                        // 0=none, 1=up, 2=down, 3=left, 4=right
+  field Food food;
 
   constructor SnakeGame new() {
+
     let snake = Snake.new();
     let direction = 0;
+
+    let food = Food.new(snake);
 
     return this;
   }
@@ -48,8 +52,11 @@ class SnakeGame {
     var char key;  // the key currently pressed by the user
     var boolean exit;
     let exit = false;
+    var Square head;
 
     while (~exit) {
+      let head = snake.getSegment(0);
+
       // waits for a key to be pressed
       while (key = 0) {
         let key = Keyboard.keyPressed();
@@ -62,11 +69,16 @@ class SnakeGame {
       if (key = 132) { let direction = 4; }   // right arrow
 
       // waits for the key to be released
-         while (~(key = 0)) {
-            let key = Keyboard.keyPressed();
-            do moveSnake();
-         }
-     } // while
+      while (~(key = 0)) {
+        let key = Keyboard.keyPressed();
+        do moveSnake();
+      }
+
+      if ((head.getXcoord() = food.getXcoord()) & (head.getYcoord() = food.getYcoord())) {
+        
+      }
+
+    } // while
      return;
    }
 

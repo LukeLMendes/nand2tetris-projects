@@ -1,16 +1,82 @@
 class Food {
   field int x, y, ray;
+  field Random random;
 
-  constructor Food new(ax, ay, ar) {
-    x = ax;
-    y = ay;
-    ray = ar;
+  constructor Food new(Snake snake) {
+    let random = Random.new();
+    let ray = 7;
 
-    do Screen.setColor(true);
-    do Screen.drawCircle(x+ray, y+ray, ray);
-
+    do place(snake);
+    do draw();
     return this;
   }
 
-  method void dispose()
+  method void dispose() {
+    do Memory.deAlloc(this);
+    return;
+  }
+
+  method void erase() {
+    do Screen.setColor(false);
+    do Screen.drawCircle(x+ray, y+ray, ray);
+
+    return;
+  }
+
+  method void draw() {
+    do Screen.setColor(true);
+    do Screen.drawCircle(x+ray, y+ray, ray);
+    return;
+  }
+
+  method int getXcoord() { return x; }
+  method int getYcoord() { return y; }
+
+  method boolean isOnTop(int ax, int ay, Snake snake) {
+    var int i;
+    var boolean on_top;
+    var Square segment;
+
+    let i = 0;
+    let on_top = false;
+
+    while (i < snake.getLenght()) {
+      let segment = snake.getSegment(i);
+
+      if ((ax = segment.getXcoord()) & (ay = segment.getYcoord())) {
+        let on_top = true;
+      }
+
+      let i = i + 1;
+    }
+
+    return on_top;
+  }
+
+  /** Picks a free cell of the grid (x: 128..368, y: 0..240, steps of 16). */
+  method void place(Snake snake) {
+    var int ax, ay;
+    var boolean on_top;
+
+    let on_top = true;
+
+    while (on_top) {
+      let ax = 128 + ((random.rand() / 16) * 16); //steps of 16
+      let ay = (random.rand() / 16) * 16; // steps of 16
+
+      let on_top = isOnTop(ax, ay, snake);
+    }
+
+    let x = ax;
+    let y = ay;
+    return;
+  }
+
+  /** Moves the food to a new place (use this after the snake eats it). */
+  method void spawn(Snake snake) {
+    do erase();
+    do place(snake);
+    do draw();
+    return;
+  }
 }

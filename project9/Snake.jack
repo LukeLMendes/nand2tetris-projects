@@ -6,9 +6,9 @@ class Snake {
     let lenght = 3;
     let snake = Array.new(3);
 
-    let snake[0] = Square.new(254, 127, 16); // head of the snake
-    let snake[1] = Square.new(254, 111, 16);
-    let snake[2] = Square.new(254, 95, 16);
+    let snake[0] = Square.new(256, 128, 16); // head of the snake
+    let snake[1] = Square.new(256, 112, 16);
+    let snake[2] = Square.new(256, 96, 16);
 
     return this;
   }
@@ -33,6 +33,9 @@ class Snake {
     return snake[i];
   }
 
+  method int getLenght() {
+    return lenght;
+  }
 
   method void shiftBody() {
     var int i;

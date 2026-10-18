@@ -1,3 +1,29 @@
 class Random {
-  
+  field int state;
+
+  constructor Random new() {
+    var int counter;
+
+    let counter = 0;
+
+    while (Keyboard.keyPressed() = 0) {
+      let counter = counter + 1;
+    }
+
+    let state = counter;
+
+    return this;
+  }
+
+  method void dispose() {
+    do Memory.deAlloc(this);
+
+    return;
+  }
+
+  method int rand() {
+    let state = ((state*5) + 67) & 255; // numero entre 0 e 255
+
+    return state;
+  }
 }
