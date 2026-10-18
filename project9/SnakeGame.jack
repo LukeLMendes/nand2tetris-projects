@@ -1,0 +1,73 @@
+class SnakeGame {
+  field Snake snake;
+  field int direction; // the snake's current direction:
+                       // 0=none, 1=up, 2=down, 3=left, 4=right
+
+  constructor SnakeGame new() {
+    let snake = Snake.new();
+    let direction = 0;
+
+    return this;
+  }
+
+  method void dispose(){
+    do snake.dispose();
+    do Memory.deAlloc(this);
+
+    return;
+  }
+
+  method void moveSnake() {
+    var Square temp0, temp1;
+
+    let temp0 = snake.getSegment(0);
+    let temp1 = snake.getSegment(1);
+
+    if (direction = 1) {
+      if (~((temp0.getXcoord() = temp1.getXcoord()) & (temp0.getYcoord() > temp1.getYcoord()))) { do snake.moveUp(); }
+      else { do snake.moveDown(); }
+    }
+    if (direction = 2) {
+      if (~((temp0.getXcoord() = temp1.getXcoord()) & (temp0.getYcoord() < temp1.getYcoord()))) { do snake.moveDown(); }
+      else { do snake.moveUp(); }
+    }
+    if (direction = 3) {
+      if (~((temp0.getYcoord() = temp1.getYcoord()) & (temp0.getXcoord() > temp1.getXcoord()))) { do snake.moveLeft(); }
+      else { do snake.moveRight(); }
+    }
+    if (direction = 4) {
+      if (~((temp0.getYcoord() = temp1.getYcoord()) & (temp0.getXcoord() < temp1.getXcoord()))) { do snake.moveRight(); }
+      else { do snake.moveLeft(); }
+    }
+    do Sys.wait(100);  // delays the next movement
+    return;
+  }
+
+   /** Runs the game: handles the user's inputs and moves the square accordingly */
+   method void run() {
+    var char key;  // the key currently pressed by the user
+    var boolean exit;
+    let exit = false;
+
+    while (~exit) {
+      // waits for a key to be pressed
+      while (key = 0) {
+        let key = Keyboard.keyPressed();
+        do moveSnake();
+      }
+      if (key = 140)  { let exit = true; }     // ESC key
+      if (key = 131) { let direction = 1; }   // up arrow
+      if (key = 133) { let direction = 2; }   // down arrow
+      if (key = 130) { let direction = 3; }   // left arrow
+      if (key = 132) { let direction = 4; }   // right arrow
+
+      // waits for the key to be released
+         while (~(key = 0)) {
+            let key = Keyboard.keyPressed();
+            do moveSnake();
+         }
+     } // while
+     return;
+   }
+
+}

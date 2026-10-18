@@ -1,0 +1,16 @@
+class Food {
+  field int x, y, ray;
+
+  constructor Food new(ax, ay, ar) {
+    x = ax;
+    y = ay;
+    ray = ar;
+
+    do Screen.setColor(true);
+    do Screen.drawCircle(x+ray, y+ray, ray);
+
+    return this;
+  }
+
+  method void dispose()
+}

@@ -1,0 +1,138 @@
+class Snake {
+  field Array snake; //array that contains squares of the snake body
+  field int lenght; //lenght of the array
+
+  constructor Snake new(){
+    let lenght = 3;
+    let snake = Array.new(3);
+
+    let snake[0] = Square.new(254, 127, 16); // head of the snake
+    let snake[1] = Square.new(254, 111, 16);
+    let snake[2] = Square.new(254, 95, 16);
+
+    return this;
+  }
+
+  method void dispose(){
+    var int i;
+    var Square temp;
+    let i = 0;
+
+    while (i < lenght) {
+      let temp = snake[i];
+      do temp.dispose();
+      let i = i + 1;
+    }
+
+    do Memory.deAlloc(this);
+
+    return;
+  }
+
+  method Square getSegment(int i) {
+    return snake[i];
+  }
+
+
+  method void shiftBody() {
+    var int i;
+    var Square temp1;
+    var Square temp2;
+    var int ax;
+    var int ay;
+
+    let i = lenght - 1;
+    while (i > 0) {
+      let temp1 = snake[i];
+      let temp2 = snake[i-1];
+
+      let ax = temp2.getXcoord();
+      let ay = temp2.getYcoord();
+
+      do temp1.setPosition(ax, ay);
+
+      let i = i - 1;
+    }
+    return;
+  }
+
+  /** erases the tail, the only place empty after a movement */
+  method void eraseTail() {
+    var Square tail;
+    let tail = snake[lenght - 1];
+    do tail.erase();
+    return;
+  }
+
+  method void drawBody() {
+    var int i;
+    var Square temp;
+
+    let i = 1;
+    while (i < lenght) {
+      let temp = snake[i];
+      do temp.draw();
+      let i = i + 1;
+    }
+    return;
+  }
+
+  method void moveDown() {
+    var Square temp;
+
+    let temp = snake[0];
+
+    if (temp.getYcoord() + 16 < 254) {
+      do eraseTail();
+      do shiftBody();
+      do temp.moveDown();
+      do drawBody();
+    }
+
+    return;
+  }
+
+  method void moveUp() {
+    var Square temp;
+
+    let temp = snake[0];
+
+    if (temp.getYcoord() > 2) {
+      do eraseTail();
+      do shiftBody();
+      do temp.moveUp();
+      do drawBody();
+    }
+
+    return;
+  }
+
+  method void moveRight() {
+    var Square temp;
+    let temp = snake[0];
+
+    if (temp.getXcoord() + 16 < 381) {
+      do eraseTail();
+      do shiftBody();
+      do temp.moveRight();
+      do drawBody();
+    }
+
+    return;
+  }
+
+  method void moveLeft() {
+    var Square temp;
+
+    let temp = snake[0];
+
+    if (temp.getXcoord() > 128) {
+      do eraseTail();
+      do shiftBody();
+      do temp.moveLeft();
+      do drawBody();
+    }
+
+    return;
+  }
+}

@@ -1,0 +1,15 @@
+class Main {
+  function void main() {
+    var SnakeGame game;
+    let game = SnakeGame.new();
+
+    //black side bars
+    do Screen.setColor(true);
+    do Screen.drawRectangle(0, 0, 126, 255);
+    do Screen.drawRectangle(383, 0, 511, 255);
+    
+    do game.run();
+    do game.dispose();
+    return;
+  }
+}
